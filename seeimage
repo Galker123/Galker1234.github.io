@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ERC-20 Token Image Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>ERC-20 Token Image Viewer</h1>
+  <p>Connect your wallet to see the image associated with your ERC-20 token.</p>
+  <button id="connectButton">Connect Wallet</button>
+  <p id="walletAddress"></p>
+  <button id="getImageButton" style="display:none;">Show Token Image</button>
+  <img id="tokenImage" style="display:none;" alt="Token Image">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+  // Ethereum smart contract interaction logic
+  const ERC20_CONTRACT_ADDRESS = "YOUR_ERC20_CONTRACT_ADDRESS";  // Replace with your ERC-20 contract address
+  const ERC20_ABI = [
+    // Only the relevant parts of the ABI for tokenURI function
+    {
+      "constant": true,
+      "inputs": [{"name": "tokenId", "type": "uint256"}],
+      "name": "tokenURI",
+      "outputs": [{"name": "", "type": "string"}],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ];
+
+  // Variables for wallet and contract interaction
+  let provider;
+  let contract;
+  let signer;
+
+  // Elements for interaction
+  const connectButton = document.getElementById("connectButton");
+  const getImageButton = document.getElementById("getImageButton");
+  const walletAddressText = document.getElementById("walletAddress");
+  const tokenImage = document.getElementById("tokenImage");
+
+  // Connect to wallet and interact with the contract
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+        walletAddressText.textContent = `Connected: ${address}`;
+        connectButton.style.display = "none";
+        getImageButton.style.display = "inline-block";
+        contract = new ethers.Contract(ERC20_CONTRACT_ADDRESS, ERC20_ABI, signer);
+      } catch (error) {
+        console.error("Error connecting to wallet:", error);
+        alert("Failed to connect to wallet.");
+      }
+    } else {
+      alert("Please install MetaMask!");
+    }
+  }
+
+  // Fetch token URI (image) based on token ID
+  async function fetchTokenImage() {
+    try {
+      // Replace with the actual token ID you want to check
+      const tokenId = 1;  // Example token ID (for simplicity)
+      const uri = await contract.tokenURI(tokenId);
+
+      // Display the image if the URI is valid
+      if (uri) {
+        tokenImage.src = uri;
+        tokenImage.style.display = "block";
+      }
+    } catch (error) {
+      console.error("Error fetching token image:", error);
+      alert("Failed to fetch token image.");
+    }
+  }
+
+  // Event listeners for buttons
+  connectButton.addEventListener("click", connectWallet);
+  getImageButton.addEventListener("click", fetchTokenImage);
+</script>
+
+</body>
+</html>
