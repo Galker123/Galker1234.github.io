@@ -1,1 +1,139 @@
-# Galker1234.github.io
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ERC-20 Token Lock</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ERC-20 Token Lock</h1>
+  <p>Connect your wallet and lock/unlock your tokens.</p>
+
+  <button id="connectButton">Connect Wallet</button><br><br>
+
+  <input type="text" id="tokenAddress" placeholder="Enter Token Address" /><br><br>
+  <input type="number" id="lockAmount" placeholder="Amount to Lock" /><br><br>
+  <button id="lockButton" style="display:none;">Lock Tokens</button>
+
+  <h3>Your Locked Balance: <span id="lockedBalance">0</span></h3>
+  <input type="number" id="unlockAmount" placeholder="Amount to Unlock" /><br><br>
+  <button id="unlockButton" style="display:none;">Unlock Tokens</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script>
+    let provider;
+    let signer;
+    let contract;
+    const tokenLockAddress = "YOUR_TOKEN_LOCK_CONTRACT_ADDRESS"; // Replace with your TokenLock contract address
+    const tokenLockABI = [
+      {
+        "constant": false,
+        "inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}],
+        "name": "lockTokens",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "constant": false,
+        "inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}],
+        "name": "unlockTokens",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [{"name": "user", "type": "address"}],
+        "name": "getLockedBalance",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
+    const connectButton = document.getElementById("connectButton");
+    const lockButton = document.getElementById("lockButton");
+    const unlockButton = document.getElementById("unlockButton");
+    const tokenAddressInput = document.getElementById("tokenAddress");
+    const lockAmountInput = document.getElementById("lockAmount");
+    const unlockAmountInput = document.getElementById("unlockAmount");
+    const lockedBalanceSpan = document.getElementById("lockedBalance");
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(tokenLockAddress, tokenLockABI, signer);
+        connectButton.style.display = "none";
+        lockButton.style.display = "inline-block";
+        unlockButton.style.display = "inline-block";
+        updateLockedBalance();
+      } else {
+        alert("Please install MetaMask!");
+      }
+    }
+
+    async function lockTokens() {
+      const tokenAddress = tokenAddressInput.value;
+      const amount = ethers.utils.parseUnits(lockAmountInput.value, 18);
+      try {
+        await contract.lockTokens(tokenAddress, amount);
+        alert("Tokens locked successfully!");
+        updateLockedBalance();
+      } catch (error) {
+        console.error(error);
+        alert("Failed to lock tokens");
+      }
+    }
+
+    async function unlockTokens() {
+      const tokenAddress = tokenAddressInput.value;
+      const amount = ethers.utils.parseUnits(unlockAmountInput.value, 18);
+      try {
+        await contract.unlockTokens(tokenAddress, amount);
+        alert("Tokens unlocked successfully!");
+        updateLockedBalance();
+      } catch (error) {
+        console.error(error);
+        alert("Failed to unlock tokens");
+      }
+    }
+
+    async function updateLockedBalance() {
+      const userAddress = await signer.getAddress();
+      const lockedBalance = await contract.getLockedBalance(userAddress);
+      lockedBalanceSpan.textContent = ethers.utils.formatUnits(lockedBalance, 18);
+    }
+
+    connectButton.addEventListener("click", connectWallet);
+    lockButton.addEventListener("click", lockTokens);
+    unlockButton.addEventListener("click", unlockTokens);
+  </script>
+</body>
+</html>
